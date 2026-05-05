@@ -17,7 +17,7 @@ const BALL_RADIUS = 15;
 const GRAVITY = 0.25;
 const JUMP_FORCE = -6.5;
 const MOVE_SPEED = 2.5;
-const BALL_MAX_SPEED = 6; // Decreased from 7
+const BALL_MAX_SPEED = 6;
 const FRICTION = 0.99;
 
 interface Point {
@@ -25,8 +25,11 @@ interface Point {
   y: number;
 }
 
-interface SpikeEffect extends Point {
-  timer: number;
+interface Particle extends Point {
+  vx: number;
+  vy: number;
+  life: number;
+  color: string;
 }
 
 interface Entity extends Point {
@@ -45,9 +48,9 @@ function App() {
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameOver'>('start');
   const [score, setScore] = useState({ p1: 0, p2: 0 });
   const [winner, setWinner] = useState<number | null>(null);
-  const [spikeFX, setSpikeFX] = useState<SpikeEffect | null>(null);
-
-  const [gameMode, setGameMode] = useState<'pva' | 'pvp'>('pva');
+  
+  const particlesRef = useRef<Particle[]>([]);
+  const gameModeRef = useRef<'pva' | 'pvp'>('pva');
 
   const p1Ref = useRef<Player>({
     x: 50,
@@ -80,7 +83,7 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'Slash'].includes(e.code)) {
+      if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyK'].includes(e.code)) {
         e.preventDefault();
       }
       keys.current[e.code] = true;
@@ -115,10 +118,27 @@ function App() {
       };
     };
 
+    const createSpikeEffect = (x: number, y: number) => {
+      const colors = ['#FF4500', '#FF8C00', '#FFD700', '#FFFFFF'];
+      for (let i = 0; i < 20; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 3;
+        particlesRef.current.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1.0,
+          color: colors[Math.floor(Math.random() * colors.length)],
+        });
+      }
+    };
+
     const update = () => {
       const p1 = p1Ref.current;
       const p2 = p2Ref.current;
       const ball = ballRef.current;
+      const gameMode = gameModeRef.current;
 
       // P1 Controls
       if (keys.current['KeyA']) p1.vx = -MOVE_SPEED;
@@ -160,7 +180,7 @@ function App() {
         }
       }
 
-      const isP2Spiking = gameMode === 'pvp' ? keys.current['Slash'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 20 && p2.isJumping);
+      const isP2Spiking = gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 20 && p2.isJumping);
 
       // Physics
       [p1, p2].forEach((p, index) => {
@@ -247,10 +267,10 @@ function App() {
           const isSpiking = (index === 0 && isP1Spiking) || (index === 1 && isP2Spiking);
 
           if (isSpiking) {
-            const spikePower = 10;
+            const spikePower = 8.5; // Slightly reduced from 10
             ball.vx = Math.cos(angle) * spikePower;
             ball.vy = Math.sin(angle) * spikePower;
-            setSpikeFX({ x: ball.x, y: ball.y, timer: 10 });
+            createSpikeEffect(ball.x, ball.y);
           } else {
             const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
             const newSpeed = Math.min(speed + 1.0, BALL_MAX_SPEED);
@@ -264,8 +284,13 @@ function App() {
         }
       });
 
-      // Update Spike FX logic locally within the loop
-      // (Using a ref for FX would be better but keeping it simple for now)
+      // Update Particles
+      particlesRef.current.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+      });
+      particlesRef.current = particlesRef.current.filter(p => p.life > 0);
 
       draw();
       animationFrameId = requestAnimationFrame(update);
@@ -368,64 +393,28 @@ function App() {
       ctx.arc(ballRef.current.x, ballRef.current.y, 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+
+      // Particles
+      particlesRef.current.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3 * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
     };
 
     animationFrameId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [gameState, gameMode]);
-
-  // Handle Spike FX timer outside of the main loop to avoid state update issues in raf
-  useEffect(() => {
-    if (!spikeFX) return;
-    const interval = setInterval(() => {
-      setSpikeFX(prev => {
-        if (!prev || prev.timer <= 0) {
-          clearInterval(interval);
-          return null;
-        }
-        return { ...prev, timer: prev.timer - 1 };
-      });
-    }, 30);
-    return () => clearInterval(interval);
-  }, [spikeFX]);
-
-  // Separate Effect for drawing to include Spike FX
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !spikeFX || spikeFX.timer <= 0) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const drawFX = () => {
-      ctx.save();
-      ctx.beginPath();
-      ctx.strokeStyle = `rgba(255, 255, 255, ${spikeFX.timer / 10})`;
-      ctx.lineWidth = 3;
-      ctx.arc(spikeFX.x, spikeFX.y, (10 - spikeFX.timer) * 5, 0, Math.PI * 2);
-      ctx.stroke();
-      
-      for(let i=0; i<8; i++) {
-        const angle = (i / 8) * Math.PI * 2;
-        const r1 = (10 - spikeFX.timer) * 3;
-        const r2 = (10 - spikeFX.timer) * 10;
-        ctx.beginPath();
-        ctx.moveTo(spikeFX.x + Math.cos(angle) * r1, spikeFX.y + Math.sin(angle) * r1);
-        ctx.lineTo(spikeFX.x + Math.cos(angle) * r2, spikeFX.y + Math.sin(angle) * r2);
-        ctx.stroke();
-      }
-      ctx.restore();
-    };
-    
-    // We need to redraw everything or just overlay? 
-    // For simplicity, this will just overlay on the current frame.
-    drawFX();
-  }, [spikeFX]);
+  }, [gameState]);
 
   const startGame = (mode: 'pva' | 'pvp') => {
     setScore({ p1: 0, p2: 0 });
-    setGameMode(mode);
+    gameModeRef.current = mode;
     setGameState('playing');
     setWinner(null);
+    particlesRef.current = [];
   };
 
   return (
@@ -449,7 +438,7 @@ function App() {
           </div>
           <div className="controls-hint">
             <p>P1: W(Jump), A,D(Move), Space(Spike)</p>
-            <p>P2: ArrowKeys(Move), / (Spike)</p>
+            <p>P2: ArrowKeys(Move), K (Spike)</p>
           </div>
         </div>
       )}
