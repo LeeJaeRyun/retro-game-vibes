@@ -57,6 +57,7 @@ function App() {
   const p2Img = useRef<HTMLImageElement | null>(null);
   const p2SadImg = useRef<HTMLImageElement | null>(null);
   const ballImg = useRef<HTMLImageElement | null>(null);
+  const victoryP1Img = useRef<HTMLImageElement | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   const p1Ref = useRef<Player>({
@@ -109,6 +110,10 @@ function App() {
     const bImg = new Image();
     bImg.src = '/ball.png';
     bImg.onload = () => { ballImg.current = bImg; };
+
+    const v1Img = new Image();
+    v1Img.src = '/victory_p1.png';
+    v1Img.onload = () => { victoryP1Img.current = v1Img; };
 
     // Setup BGM
     bgmRef.current = new Audio('/bgm.mp3');
@@ -469,6 +474,11 @@ function App() {
         <div className="overlay">
           <h1>대회 종료</h1>
           <h2>Player {winner === 1 ? '의찬' : '준서'} 우승!</h2>
+          {winner === 1 && (
+            <div className="victory-image-container">
+              <img src="/victory_p1.png" alt="의찬 우승" className="victory-p1" />
+            </div>
+          )}
           <div className="menu">
             <button onClick={() => startGame('pva')}>싱글 모드 재도전</button>
             <button onClick={() => startGame('pvp')}>멀티 모드 재도전</button>

@@ -118,6 +118,26 @@ body {
   font-weight: bold;
 }
 
+.victory-image-container {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  animation: bounce 2s infinite;
+}
+
+.victory-p1 {
+  max-width: 250px;
+  height: auto;
+  border-radius: 15px;
+  border: 5px solid #ffff00;
+  box-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
 .overlay button {
   padding: 15px 30px;
   font-size: 20px;
