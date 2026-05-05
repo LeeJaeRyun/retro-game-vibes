@@ -365,10 +365,13 @@ function App() {
       ctx.arc(NET_X, NET_Y, 4, 0, Math.PI * 2);
       ctx.fill();
 
-      // P1 Render (Size fixed to PIKACHU_WIDTH/HEIGHT)
+      // P1 Render
       const p1IsSad = score.p1 < score.p2;
       if (p1IsSad && p1SadImg.current) {
-        ctx.drawImage(p1SadImg.current, p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+        const sadSize = PIKACHU_WIDTH * 2.0; // Increased multiplier for P1
+        const offsetX = (sadSize - PIKACHU_WIDTH) / 2;
+        const offsetY = (sadSize - PIKACHU_HEIGHT) / 2;
+        ctx.drawImage(p1SadImg.current, p1Ref.current.x - offsetX, p1Ref.current.y - offsetY, sadSize, sadSize);
       } else if (p1Img.current) {
         ctx.drawImage(p1Img.current, p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       } else {
@@ -376,10 +379,13 @@ function App() {
         ctx.fillRect(p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      // P2 Render (Size fixed to PIKACHU_WIDTH/HEIGHT)
+      // P2 Render
       const p2IsSad = score.p2 < score.p1;
       if (p2IsSad && p2SadImg.current) {
-        ctx.drawImage(p2SadImg.current, p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+        const sadSize = PIKACHU_WIDTH * 1.5; // Kept at 1.5 for P2
+        const offsetX = (sadSize - PIKACHU_WIDTH) / 2;
+        const offsetY = (sadSize - PIKACHU_HEIGHT) / 2;
+        ctx.drawImage(p2SadImg.current, p2Ref.current.x - offsetX, p2Ref.current.y - offsetY, sadSize, sadSize);
       } else if (p2Img.current) {
         ctx.drawImage(p2Img.current, p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       } else {
