@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 // Constants
-const CANVAS_WIDTH = 432;
-const CANVAS_HEIGHT = 304;
-const GROUND_Y = 272;
-const NET_WIDTH = 4;
-const NET_HEIGHT = 100;
+const CANVAS_WIDTH = 600;
+const CANVAS_HEIGHT = 350;
+const GROUND_Y = 310;
+const NET_WIDTH = 6;
+const NET_HEIGHT = 110;
 const NET_X = CANVAS_WIDTH / 2;
-const NET_Y = CANVAS_HEIGHT - NET_HEIGHT - 32;
+const NET_Y = GROUND_Y - NET_HEIGHT;
 
-const PIKACHU_WIDTH = 70; // Increased for better visibility
-const PIKACHU_HEIGHT = 70; // Increased for better visibility
+const PIKACHU_WIDTH = 70;
+const PIKACHU_HEIGHT = 70;
 const BALL_RADIUS = 15;
 
 const GRAVITY = 0.25;
@@ -86,7 +86,6 @@ function App() {
   const keys = useRef<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    // Load images
     const img1 = new Image();
     img1.src = '/p1.png';
     img1.onload = () => { p1Img.current = img1; };
@@ -95,7 +94,6 @@ function App() {
     img2.src = '/p2.png';
     img2.onload = () => { p2Img.current = img2; };
 
-    // Setup BGM
     bgmRef.current = new Audio('/bgm.mp3');
     bgmRef.current.loop = true;
     bgmRef.current.volume = 0.4;
@@ -129,8 +127,8 @@ function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Ensure sharp rendering
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     let animationFrameId: number;
 
@@ -165,7 +163,6 @@ function App() {
       const ball = ballRef.current;
       const gameMode = gameModeRef.current;
 
-      // P1 Controls
       if (keys.current['KeyA']) p1.vx = -MOVE_SPEED;
       else if (keys.current['KeyD']) p1.vx = MOVE_SPEED;
       else p1.vx = 0;
@@ -177,7 +174,6 @@ function App() {
 
       const isP1Spiking = keys.current['Space'];
 
-      // P2 Controls or AI
       if (gameMode === 'pvp') {
         if (keys.current['ArrowLeft']) p2.vx = -MOVE_SPEED;
         else if (keys.current['ArrowRight']) p2.vx = MOVE_SPEED;
@@ -207,7 +203,6 @@ function App() {
 
       const isP2Spiking = gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 25 && p2.isJumping);
 
-      // Physics
       [p1, p2].forEach((p, index) => {
         p.vy += GRAVITY;
         p.x += p.vx;
@@ -226,7 +221,6 @@ function App() {
         if (p.x > maxX) p.x = maxX;
       });
 
-      // Ball Physics
       ball.vy += GRAVITY * 0.5;
       ball.x += ball.vx;
       ball.y += ball.vy;
@@ -309,7 +303,6 @@ function App() {
         }
       });
 
-      // Update Particles
       particlesRef.current.forEach(p => {
         p.x += p.vx;
         p.y += p.vy;
@@ -323,29 +316,24 @@ function App() {
 
     const draw = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
       ctx.fillStyle = '#87CEEB';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      [ {x: 50, y: 50}, {x: 200, y: 30}, {x: 350, y: 60} ].forEach(c => {
+      [ {x: 80, y: 50}, {x: 300, y: 30}, {x: 520, y: 60} ].forEach(c => {
         ctx.beginPath();
         ctx.arc(c.x, c.y, 20, 0, Math.PI * 2);
         ctx.arc(c.x + 15, c.y - 10, 20, 0, Math.PI * 2);
         ctx.arc(c.x + 30, c.y, 20, 0, Math.PI * 2);
         ctx.fill();
       });
-
       ctx.fillStyle = '#228B22';
       ctx.beginPath();
       ctx.moveTo(0, GROUND_Y);
       ctx.quadraticCurveTo(CANVAS_WIDTH / 4, GROUND_Y - 40, CANVAS_WIDTH / 2, GROUND_Y - 20);
       ctx.quadraticCurveTo(CANVAS_WIDTH * 0.75, GROUND_Y - 60, CANVAS_WIDTH, GROUND_Y);
       ctx.fill();
-
       ctx.fillStyle = '#F4A460';
       ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
-
       ctx.fillStyle = '#FFB6C1';
       ctx.fillRect(NET_X - NET_WIDTH / 2, NET_Y, NET_WIDTH, NET_HEIGHT);
       ctx.fillStyle = '#FFF';
@@ -353,7 +341,6 @@ function App() {
       ctx.arc(NET_X, NET_Y, 4, 0, Math.PI * 2);
       ctx.fill();
 
-      // P1 Custom Image
       if (p1Img.current) {
         ctx.drawImage(p1Img.current, p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       } else {
@@ -361,7 +348,6 @@ function App() {
         ctx.fillRect(p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      // P2 Custom Image
       if (p2Img.current) {
         ctx.drawImage(p2Img.current, p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       } else {
@@ -369,7 +355,6 @@ function App() {
         ctx.fillRect(p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      // Ball
       ctx.fillStyle = '#FF0000';
       ctx.beginPath();
       ctx.arc(ballRef.current.x, ballRef.current.y, BALL_RADIUS, Math.PI, 0);
@@ -393,7 +378,6 @@ function App() {
       ctx.fill();
       ctx.stroke();
 
-      // Particles
       particlesRef.current.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life;
@@ -414,8 +398,6 @@ function App() {
     setGameState('playing');
     setWinner(null);
     particlesRef.current = [];
-    
-    // Play BGM
     if (bgmRef.current) {
       bgmRef.current.play().catch(e => console.log("BGM play failed:", e));
     }
