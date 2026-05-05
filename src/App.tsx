@@ -75,17 +75,22 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent scrolling with arrow keys and space
+      if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW'].includes(e.code)) {
+        e.preventDefault();
+      }
       keys.current[e.code] = true;
-      if (gameState === 'start' || gameState === 'gameOver') return;
     };
-    const handleKeyUp = (e: KeyboardEvent) => (keys.current[e.code] = false);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      keys.current[e.code] = false;
+    };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameState]);
+  }, []);
 
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -116,6 +121,7 @@ function App() {
       else if (keys.current['KeyD']) p1.vx = MOVE_SPEED;
       else p1.vx = 0;
 
+      // Robust Jump check
       if (keys.current['KeyW'] && !p1.isJumping) {
         p1.vy = JUMP_FORCE;
         p1.isJumping = true;
@@ -160,8 +166,8 @@ function App() {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Ground collision
-        if (p.y > GROUND_Y - PIKACHU_HEIGHT) {
+        // Ground collision (Allow small buffer)
+        if (p.y >= GROUND_Y - PIKACHU_HEIGHT) {
           p.y = GROUND_Y - PIKACHU_HEIGHT;
           p.vy = 0;
           p.isJumping = false;
