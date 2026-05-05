@@ -270,7 +270,7 @@ function App() {
           // P2 Scores
           setScore(s => {
             const next = { ...s, p2: s.p2 + 1 };
-            if (next.p2 >= 15) {
+            if (next.p2 >= 10) {
               setGameState('gameOver');
               setWinner(2);
             }
@@ -281,7 +281,7 @@ function App() {
           // P1 Scores
           setScore(s => {
             const next = { ...s, p1: s.p1 + 1 };
-            if (next.p1 >= 15) {
+            if (next.p1 >= 10) {
               setGameState('gameOver');
               setWinner(1);
             }
