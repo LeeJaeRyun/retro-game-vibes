@@ -340,8 +340,12 @@ function App() {
 
     const draw = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      // Sky
       ctx.fillStyle = '#87CEEB';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      
+      // Clouds
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       [ {x: 80, y: 50}, {x: 300, y: 30}, {x: 520, y: 60} ].forEach(c => {
         ctx.beginPath();
@@ -350,14 +354,20 @@ function App() {
         ctx.arc(c.x + 30, c.y, 20, 0, Math.PI * 2);
         ctx.fill();
       });
+      
+      // Hills
       ctx.fillStyle = '#228B22';
       ctx.beginPath();
       ctx.moveTo(0, GROUND_Y);
       ctx.quadraticCurveTo(CANVAS_WIDTH / 4, GROUND_Y - 40, CANVAS_WIDTH / 2, GROUND_Y - 20);
       ctx.quadraticCurveTo(CANVAS_WIDTH * 0.75, GROUND_Y - 60, CANVAS_WIDTH, GROUND_Y);
       ctx.fill();
+      
+      // Ground
       ctx.fillStyle = '#F4A460';
       ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+
+      // Net
       ctx.fillStyle = '#FFB6C1';
       ctx.fillRect(NET_X - NET_WIDTH / 2, NET_Y, NET_WIDTH, NET_HEIGHT);
       ctx.fillStyle = '#FFF';
@@ -368,7 +378,7 @@ function App() {
       // P1 Render
       const p1IsSad = score.p1 < score.p2;
       if (p1IsSad && p1SadImg.current) {
-        const sadSize = PIKACHU_WIDTH * 2.0; // Increased multiplier for P1
+        const sadSize = PIKACHU_WIDTH * 2.0; 
         const offsetX = (sadSize - PIKACHU_WIDTH) / 2;
         const offsetY = (sadSize - PIKACHU_HEIGHT) / 2;
         ctx.drawImage(p1SadImg.current, p1Ref.current.x - offsetX, p1Ref.current.y - offsetY, sadSize, sadSize);
@@ -382,7 +392,7 @@ function App() {
       // P2 Render
       const p2IsSad = score.p2 < score.p1;
       if (p2IsSad && p2SadImg.current) {
-        const sadSize = PIKACHU_WIDTH * 1.5; // Kept at 1.5 for P2
+        const sadSize = PIKACHU_WIDTH * 1.5; 
         const offsetX = (sadSize - PIKACHU_WIDTH) / 2;
         const offsetY = (sadSize - PIKACHU_HEIGHT) / 2;
         ctx.drawImage(p2SadImg.current, p2Ref.current.x - offsetX, p2Ref.current.y - offsetY, sadSize, sadSize);
@@ -393,7 +403,7 @@ function App() {
         ctx.fillRect(p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      // New Ball Render
+      // Ball Render
       if (ballImg.current) {
         ctx.drawImage(ballImg.current, ballRef.current.x - BALL_RADIUS, ballRef.current.y - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
       } else {
