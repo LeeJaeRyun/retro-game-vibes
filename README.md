@@ -46,8 +46,8 @@ https://github.com/LeeJaeRyun/retro-game-vibes/raw/main/public/preview.mp4
 
 ## 👥 작업자
 
-- **박현솔** (Developer & Director)
-- **이재륜** (Developer & Asset Manager)
+- **박현솔**
+- **이재륜**
 
 ---
 
@@ -59,3 +59,5 @@ npm run dev
 ```
 
 이후 브라우저에서 `http://localhost:3000` 접속
+
+....
