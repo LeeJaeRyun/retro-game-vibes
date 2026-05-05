@@ -12,12 +12,12 @@ const NET_Y = CANVAS_HEIGHT - NET_HEIGHT - 32;
 
 const PIKACHU_WIDTH = 40;
 const PIKACHU_HEIGHT = 40;
-const BALL_RADIUS = 10;
+const BALL_RADIUS = 15; // Increased from 10
 
-const GRAVITY = 0.3;
-const JUMP_FORCE = -7;
-const MOVE_SPEED = 3;
-const BALL_MAX_SPEED = 8;
+const GRAVITY = 0.25; // Decreased from 0.3
+const JUMP_FORCE = -6.5; // Adjusted for lower gravity
+const MOVE_SPEED = 2.5; // Decreased from 3
+const BALL_MAX_SPEED = 7; // Decreased from 8
 const FRICTION = 0.99;
 
 interface Point {
