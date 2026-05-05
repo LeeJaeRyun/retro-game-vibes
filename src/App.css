@@ -133,6 +133,28 @@ body {
   box-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
 }
 
+.victory-text-container {
+  margin: 30px 0;
+  display: flex;
+  justify-content: center;
+  animation: bounce 2s infinite;
+}
+
+.victory-p2-text {
+  font-size: 84px;
+  font-weight: 900;
+  color: #00ffcc;
+  text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc, 5px 5px 0px #000;
+  letter-spacing: 10px;
+  margin: 0;
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc, 5px 5px 0px #000; }
+  to { text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc, 5px 5px 0px #000; }
+}
+
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-15px); }

@@ -479,6 +479,11 @@ function App() {
               <img src="/victory_p1.png" alt="의찬 우승" className="victory-p1" />
             </div>
           )}
+          {winner === 2 && (
+            <div className="victory-text-container">
+              <h2 className="victory-p2-text">우즐모즐</h2>
+            </div>
+          )}
           <div className="menu">
             <button onClick={() => startGame('pva')}>싱글 모드 재도전</button>
             <button onClick={() => startGame('pvp')}>멀티 모드 재도전</button>
