@@ -54,6 +54,7 @@ function App() {
   
   const p1Img = useRef<HTMLImageElement | null>(null);
   const p2Img = useRef<HTMLImageElement | null>(null);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   const p1Ref = useRef<Player>({
     x: 50,
@@ -94,6 +95,11 @@ function App() {
     img2.src = '/p2.png';
     img2.onload = () => { p2Img.current = img2; };
 
+    // Setup BGM
+    bgmRef.current = new Audio('/bgm.mp3');
+    bgmRef.current.loop = true;
+    bgmRef.current.volume = 0.4;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyK'].includes(e.code)) {
         e.preventDefault();
@@ -108,6 +114,10 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current = null;
+      }
     };
   }, []);
 
@@ -404,6 +414,11 @@ function App() {
     setGameState('playing');
     setWinner(null);
     particlesRef.current = [];
+    
+    // Play BGM
+    if (bgmRef.current) {
+      bgmRef.current.play().catch(e => console.log("BGM play failed:", e));
+    }
   };
 
   return (
