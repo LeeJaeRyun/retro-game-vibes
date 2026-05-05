@@ -6,7 +6,7 @@ const CANVAS_WIDTH = 432;
 const CANVAS_HEIGHT = 304;
 const GROUND_Y = 272;
 const NET_WIDTH = 4;
-const NET_HEIGHT = 128;
+const NET_HEIGHT = 100; // Decreased from 128
 const NET_X = CANVAS_WIDTH / 2;
 const NET_Y = CANVAS_HEIGHT - NET_HEIGHT - 32;
 
