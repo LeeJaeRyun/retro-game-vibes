@@ -12,7 +12,7 @@ const NET_Y = GROUND_Y - NET_HEIGHT;
 
 const PIKACHU_WIDTH = 70;
 const PIKACHU_HEIGHT = 70;
-const BALL_RADIUS = 15;
+const BALL_RADIUS = 20;
 
 const GRAVITY = 0.25;
 const JUMP_FORCE = -6.5;
@@ -53,7 +53,10 @@ function App() {
   const gameModeRef = useRef<'pva' | 'pvp'>('pva');
   
   const p1Img = useRef<HTMLImageElement | null>(null);
+  const p1SadImg = useRef<HTMLImageElement | null>(null);
   const p2Img = useRef<HTMLImageElement | null>(null);
+  const p2SadImg = useRef<HTMLImageElement | null>(null);
+  const ballImg = useRef<HTMLImageElement | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   const p1Ref = useRef<Player>({
@@ -86,14 +89,28 @@ function App() {
   const keys = useRef<{ [key: string]: boolean }>({});
 
   useEffect(() => {
+    // Load images
     const img1 = new Image();
     img1.src = '/p1.png';
     img1.onload = () => { p1Img.current = img1; };
+
+    const img1Sad = new Image();
+    img1Sad.src = '/p1_sad.png';
+    img1Sad.onload = () => { p1SadImg.current = img1Sad; };
     
     const img2 = new Image();
     img2.src = '/p2.png';
     img2.onload = () => { p2Img.current = img2; };
 
+    const img2Sad = new Image();
+    img2Sad.src = '/p2_sad.png';
+    img2Sad.onload = () => { p2SadImg.current = img2Sad; };
+
+    const bImg = new Image();
+    bImg.src = '/ball.png';
+    bImg.onload = () => { ballImg.current = bImg; };
+
+    // Setup BGM
     bgmRef.current = new Audio('/bgm.mp3');
     bgmRef.current.loop = true;
     bgmRef.current.volume = 0.4;
@@ -127,6 +144,7 @@ function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Enable high-quality smoothing for photos
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
@@ -163,6 +181,7 @@ function App() {
       const ball = ballRef.current;
       const gameMode = gameModeRef.current;
 
+      // P1 Controls
       if (keys.current['KeyA']) p1.vx = -MOVE_SPEED;
       else if (keys.current['KeyD']) p1.vx = MOVE_SPEED;
       else p1.vx = 0;
@@ -174,6 +193,7 @@ function App() {
 
       const isP1Spiking = keys.current['Space'];
 
+      // P2 Controls or AI
       if (gameMode === 'pvp') {
         if (keys.current['ArrowLeft']) p2.vx = -MOVE_SPEED;
         else if (keys.current['ArrowRight']) p2.vx = MOVE_SPEED;
@@ -201,8 +221,9 @@ function App() {
         }
       }
 
-      const isP2Spiking = gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 25 && p2.isJumping);
+      const isP2Spiking = (gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 25 && p2.isJumping));
 
+      // Physics
       [p1, p2].forEach((p, index) => {
         p.vy += GRAVITY;
         p.x += p.vx;
@@ -221,6 +242,7 @@ function App() {
         if (p.x > maxX) p.x = maxX;
       });
 
+      // Ball Physics
       ball.vy += GRAVITY * 0.5;
       ball.x += ball.vx;
       ball.y += ball.vy;
@@ -240,6 +262,7 @@ function App() {
 
       if (ball.y > GROUND_Y - BALL_RADIUS) {
         if (ball.x < NET_X) {
+          // P2 Scores
           setScore(s => {
             const next = { ...s, p2: s.p2 + 1 };
             if (next.p2 >= 15) {
@@ -250,6 +273,7 @@ function App() {
           });
           resetBall(true);
         } else {
+          // P1 Scores
           setScore(s => {
             const next = { ...s, p1: s.p1 + 1 };
             if (next.p1 >= 15) {
@@ -341,42 +365,37 @@ function App() {
       ctx.arc(NET_X, NET_Y, 4, 0, Math.PI * 2);
       ctx.fill();
 
-      if (p1Img.current) {
+      // P1 Render (Size fixed to PIKACHU_WIDTH/HEIGHT)
+      const p1IsSad = score.p1 < score.p2;
+      if (p1IsSad && p1SadImg.current) {
+        ctx.drawImage(p1SadImg.current, p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+      } else if (p1Img.current) {
         ctx.drawImage(p1Img.current, p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       } else {
         ctx.fillStyle = '#FFFF00';
         ctx.fillRect(p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      if (p2Img.current) {
+      // P2 Render (Size fixed to PIKACHU_WIDTH/HEIGHT)
+      const p2IsSad = score.p2 < score.p1;
+      if (p2IsSad && p2SadImg.current) {
+        ctx.drawImage(p2SadImg.current, p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+      } else if (p2Img.current) {
         ctx.drawImage(p2Img.current, p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       } else {
         ctx.fillStyle = '#FFFF00';
         ctx.fillRect(p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      ctx.fillStyle = '#FF0000';
-      ctx.beginPath();
-      ctx.arc(ballRef.current.x, ballRef.current.y, BALL_RADIUS, Math.PI, 0);
-      ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath();
-      ctx.arc(ballRef.current.x, ballRef.current.y, BALL_RADIUS, 0, Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(ballRef.current.x, ballRef.current.y, BALL_RADIUS, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(ballRef.current.x - BALL_RADIUS, ballRef.current.y);
-      ctx.lineTo(ballRef.current.x + BALL_RADIUS, ballRef.current.y);
-      ctx.stroke();
-      ctx.fillStyle = '#FFF';
-      ctx.beginPath();
-      ctx.arc(ballRef.current.x, ballRef.current.y, 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      // New Ball Render
+      if (ballImg.current) {
+        ctx.drawImage(ballImg.current, ballRef.current.x - BALL_RADIUS, ballRef.current.y - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
+      } else {
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.arc(ballRef.current.x, ballRef.current.y, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       particlesRef.current.forEach(p => {
         ctx.fillStyle = p.color;
@@ -390,7 +409,7 @@ function App() {
 
     animationFrameId = requestAnimationFrame(update);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [gameState]);
+  }, [gameState, score]);
 
   const startGame = (mode: 'pva' | 'pvp') => {
     setScore({ p1: 0, p2: 0 });
