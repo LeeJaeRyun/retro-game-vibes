@@ -440,6 +440,7 @@ function App() {
         height={CANVAS_HEIGHT}
         className="game-canvas"
       />
+      {gameState === 'start' && <div className="start-screen-bg" />}
       {gameState === 'start' && (
         <div className="overlay">
           <h1>&lt;에코노배 배구 대회&gt;</h1>

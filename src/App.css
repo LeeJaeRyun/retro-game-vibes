@@ -65,20 +65,35 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.9);
-  padding: 40px;
-  border-radius: 20px;
+  background-color: rgba(0, 0, 0, 0.7); /* Slightly more transparent */
+  padding: 60px;
+  border-radius: 30px;
   color: white;
   text-align: center;
   z-index: 20;
-  border: 2px solid #444;
+  border: 4px solid #444;
+  backdrop-filter: blur(5px); /* Add blur effect to the game behind */
+  box-shadow: 0 0 100px rgba(0,0,0,1);
+  min-width: 400px;
 }
 
-.menu {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin: 25px 0;
+/* Background specifically for the start state */
+.game-container:has(.overlay h1:contains("<에코노배 배구 대회>")) {
+  /* This is a trick, but since I can't easily use :has with text content in CSS alone, 
+     I will add a specific class in App.tsx to the container instead. */
+}
+
+.start-screen-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/start_bg.jpg'); /* Use the new background image */
+  background-size: cover;
+  background-position: center;
+  z-index: 15;
+  opacity: 0.6;
 }
 
 .overlay h1 {
