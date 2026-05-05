@@ -6,12 +6,12 @@ const CANVAS_WIDTH = 432;
 const CANVAS_HEIGHT = 304;
 const GROUND_Y = 272;
 const NET_WIDTH = 4;
-const NET_HEIGHT = 100; // Decreased from 128
+const NET_HEIGHT = 100;
 const NET_X = CANVAS_WIDTH / 2;
 const NET_Y = CANVAS_HEIGHT - NET_HEIGHT - 32;
 
-const PIKACHU_WIDTH = 40;
-const PIKACHU_HEIGHT = 40;
+const PIKACHU_WIDTH = 70; // Increased for better visibility
+const PIKACHU_HEIGHT = 70; // Increased for better visibility
 const BALL_RADIUS = 15;
 
 const GRAVITY = 0.25;
@@ -51,6 +51,9 @@ function App() {
   
   const particlesRef = useRef<Particle[]>([]);
   const gameModeRef = useRef<'pva' | 'pvp'>('pva');
+  
+  const p1Img = useRef<HTMLImageElement | null>(null);
+  const p2Img = useRef<HTMLImageElement | null>(null);
 
   const p1Ref = useRef<Player>({
     x: 50,
@@ -82,6 +85,15 @@ function App() {
   const keys = useRef<{ [key: string]: boolean }>({});
 
   useEffect(() => {
+    // Load images
+    const img1 = new Image();
+    img1.src = '/p1.png';
+    img1.onload = () => { p1Img.current = img1; };
+    
+    const img2 = new Image();
+    img2.src = '/p2.png';
+    img2.onload = () => { p2Img.current = img2; };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyK'].includes(e.code)) {
         e.preventDefault();
@@ -106,6 +118,9 @@ function App() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Ensure sharp rendering
+    ctx.imageSmoothingEnabled = false;
 
     let animationFrameId: number;
 
@@ -180,7 +195,7 @@ function App() {
         }
       }
 
-      const isP2Spiking = gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 20 && p2.isJumping);
+      const isP2Spiking = gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 25 && p2.isJumping);
 
       // Physics
       [p1, p2].forEach((p, index) => {
@@ -267,7 +282,7 @@ function App() {
           const isSpiking = (index === 0 && isP1Spiking) || (index === 1 && isP2Spiking);
 
           if (isSpiking) {
-            const spikePower = 8.5; // Slightly reduced from 10
+            const spikePower = 8.5;
             ball.vx = Math.cos(angle) * spikePower;
             ball.vy = Math.sin(angle) * spikePower;
             createSpikeEffect(ball.x, ball.y);
@@ -328,47 +343,21 @@ function App() {
       ctx.arc(NET_X, NET_Y, 4, 0, Math.PI * 2);
       ctx.fill();
 
-      // P1 Pikachu
-      ctx.save();
-      ctx.translate(p1Ref.current.x, p1Ref.current.y);
-      ctx.fillStyle = '#FFFF00';
-      ctx.fillRect(0, 0, PIKACHU_WIDTH, PIKACHU_HEIGHT);
-      ctx.fillRect(5, -10, 8, 15);
-      ctx.fillRect(27, -10, 8, 15);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(5, -10, 8, 4);
-      ctx.fillRect(27, -10, 8, 4);
-      ctx.fillRect(30, 10, 4, 4);
-      ctx.fillStyle = '#FF0000';
-      ctx.fillRect(30, 25, 6, 6);
-      ctx.fillStyle = '#FFFF00';
-      ctx.beginPath();
-      ctx.moveTo(0, 30);
-      ctx.lineTo(-10, 20);
-      ctx.lineTo(-5, 35);
-      ctx.fill();
-      ctx.restore();
+      // P1 Custom Image
+      if (p1Img.current) {
+        ctx.drawImage(p1Img.current, p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+      } else {
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillRect(p1Ref.current.x, p1Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+      }
 
-      // P2 Pikachu
-      ctx.save();
-      ctx.translate(p2Ref.current.x, p2Ref.current.y);
-      ctx.fillStyle = '#FFFF00';
-      ctx.fillRect(0, 0, PIKACHU_WIDTH, PIKACHU_HEIGHT);
-      ctx.fillRect(5, -10, 8, 15);
-      ctx.fillRect(27, -10, 8, 15);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(5, -10, 8, 4);
-      ctx.fillRect(27, -10, 8, 4);
-      ctx.fillRect(6, 10, 4, 4);
-      ctx.fillStyle = '#FF0000';
-      ctx.fillRect(4, 25, 6, 6);
-      ctx.fillStyle = '#FFFF00';
-      ctx.beginPath();
-      ctx.moveTo(PIKACHU_WIDTH, 30);
-      ctx.lineTo(PIKACHU_WIDTH + 10, 20);
-      ctx.lineTo(PIKACHU_WIDTH + 5, 35);
-      ctx.fill();
-      ctx.restore();
+      // P2 Custom Image
+      if (p2Img.current) {
+        ctx.drawImage(p2Img.current, p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+      } else {
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillRect(p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
+      }
 
       // Ball
       ctx.fillStyle = '#FF0000';
