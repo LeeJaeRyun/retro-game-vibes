@@ -12,17 +12,21 @@ const NET_Y = CANVAS_HEIGHT - NET_HEIGHT - 32;
 
 const PIKACHU_WIDTH = 40;
 const PIKACHU_HEIGHT = 40;
-const BALL_RADIUS = 15; // Increased from 10
+const BALL_RADIUS = 15;
 
-const GRAVITY = 0.25; // Decreased from 0.3
-const JUMP_FORCE = -6.5; // Adjusted for lower gravity
-const MOVE_SPEED = 2.5; // Decreased from 3
-const BALL_MAX_SPEED = 7; // Decreased from 8
+const GRAVITY = 0.25;
+const JUMP_FORCE = -6.5;
+const MOVE_SPEED = 2.5;
+const BALL_MAX_SPEED = 6; // Decreased from 7
 const FRICTION = 0.99;
 
 interface Point {
   x: number;
   y: number;
+}
+
+interface SpikeEffect extends Point {
+  timer: number;
 }
 
 interface Entity extends Point {
@@ -41,6 +45,7 @@ function App() {
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameOver'>('start');
   const [score, setScore] = useState({ p1: 0, p2: 0 });
   const [winner, setWinner] = useState<number | null>(null);
+  const [spikeFX, setSpikeFX] = useState<SpikeEffect | null>(null);
 
   const [gameMode, setGameMode] = useState<'pva' | 'pvp'>('pva');
 
@@ -75,8 +80,7 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent scrolling with arrow keys and space
-      if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW'].includes(e.code)) {
+      if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'Slash'].includes(e.code)) {
         e.preventDefault();
       }
       keys.current[e.code] = true;
@@ -121,13 +125,12 @@ function App() {
       else if (keys.current['KeyD']) p1.vx = MOVE_SPEED;
       else p1.vx = 0;
 
-      // Robust Jump check
       if (keys.current['KeyW'] && !p1.isJumping) {
         p1.vy = JUMP_FORCE;
         p1.isJumping = true;
       }
 
-      const isP1Smashing = keys.current['Space'];
+      const isP1Spiking = keys.current['Space'];
 
       // P2 Controls or AI
       if (gameMode === 'pvp') {
@@ -140,7 +143,6 @@ function App() {
           p2.isJumping = true;
         }
       } else {
-        // P2 Simple AI
         if (ball.x > NET_X) {
           if (ball.x < p2.x + PIKACHU_WIDTH / 2) p2.vx = -MOVE_SPEED * 0.8;
           else if (ball.x > p2.x + PIKACHU_WIDTH / 2) p2.vx = MOVE_SPEED * 0.8;
@@ -158,7 +160,7 @@ function App() {
         }
       }
 
-      const isP2Smashing = gameMode === 'pvp' ? keys.current['Enter'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 10 && p2.isJumping);
+      const isP2Spiking = gameMode === 'pvp' ? keys.current['Slash'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 20 && p2.isJumping);
 
       // Physics
       [p1, p2].forEach((p, index) => {
@@ -166,14 +168,12 @@ function App() {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Ground collision (Allow small buffer)
         if (p.y >= GROUND_Y - PIKACHU_HEIGHT) {
           p.y = GROUND_Y - PIKACHU_HEIGHT;
           p.vy = 0;
           p.isJumping = false;
         }
 
-        // Boundary & Net collision
         const minX = index === 0 ? 0 : NET_X + NET_WIDTH / 2;
         const maxX = index === 0 ? NET_X - NET_WIDTH / 2 - PIKACHU_WIDTH : CANVAS_WIDTH - PIKACHU_WIDTH;
         
@@ -186,7 +186,6 @@ function App() {
       ball.x += ball.vx;
       ball.y += ball.vy;
 
-      // Ball Wall Collisions
       if (ball.x < BALL_RADIUS) {
         ball.x = BALL_RADIUS;
         ball.vx = Math.abs(ball.vx);
@@ -200,7 +199,6 @@ function App() {
         ball.vy = Math.abs(ball.vy);
       }
 
-      // Ball Ground Collision (Score!)
       if (ball.y > GROUND_Y - BALL_RADIUS) {
         if (ball.x < NET_X) {
           setScore(s => {
@@ -225,50 +223,49 @@ function App() {
         }
       }
 
-      // Ball Net Collision
       if (
         ball.y + BALL_RADIUS > NET_Y &&
         ball.x + BALL_RADIUS > NET_X - NET_WIDTH / 2 &&
         ball.x - BALL_RADIUS < NET_X + NET_WIDTH / 2
       ) {
-        if (ball.y < NET_Y + 10) { // Top of net
+        if (ball.y < NET_Y + 10) {
           ball.vy = -Math.abs(ball.vy) * 0.8;
           ball.y = NET_Y - BALL_RADIUS;
-        } else { // Side of net
+        } else {
           ball.vx = -ball.vx;
           ball.x = ball.x < NET_X ? NET_X - NET_WIDTH / 2 - BALL_RADIUS : NET_X + NET_WIDTH / 2 + BALL_RADIUS;
         }
       }
 
-      // Ball Player Collision
       [p1, p2].forEach((p, index) => {
         const dx = ball.x - (p.x + PIKACHU_WIDTH / 2);
         const dy = ball.y - (p.y + PIKACHU_HEIGHT / 2);
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < BALL_RADIUS + PIKACHU_WIDTH / 2) {
-          if (index === 0 && isP1Smashing) {
-            ball.vx = 10;
-            ball.vy = 5;
-          } else if (index === 1 && isP2Smashing) {
-            ball.vx = -10;
-            ball.vy = 5;
+          const angle = Math.atan2(dy, dx);
+          const isSpiking = (index === 0 && isP1Spiking) || (index === 1 && isP2Spiking);
+
+          if (isSpiking) {
+            const spikePower = 10;
+            ball.vx = Math.cos(angle) * spikePower;
+            ball.vy = Math.sin(angle) * spikePower;
+            setSpikeFX({ x: ball.x, y: ball.y, timer: 10 });
           } else {
-            // Simple bounce logic
-            const angle = Math.atan2(dy, dx);
             const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            const newSpeed = Math.min(speed + 1, BALL_MAX_SPEED);
-            
+            const newSpeed = Math.min(speed + 1.0, BALL_MAX_SPEED);
             ball.vx = Math.cos(angle) * newSpeed;
             ball.vy = Math.sin(angle) * newSpeed;
           }
 
-          // Push ball out of player
           const angleOut = Math.atan2(ball.y - (p.y + PIKACHU_HEIGHT/2), ball.x - (p.x + PIKACHU_WIDTH/2));
           ball.x = p.x + PIKACHU_WIDTH / 2 + Math.cos(angleOut) * (BALL_RADIUS + PIKACHU_WIDTH / 2);
           ball.y = p.y + PIKACHU_HEIGHT / 2 + Math.sin(angleOut) * (BALL_RADIUS + PIKACHU_WIDTH / 2);
         }
       });
+
+      // Update Spike FX logic locally within the loop
+      // (Using a ref for FX would be better but keeping it simple for now)
 
       draw();
       animationFrameId = requestAnimationFrame(update);
@@ -277,11 +274,9 @@ function App() {
     const draw = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Background - Sky
       ctx.fillStyle = '#87CEEB';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Background - Clouds
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       [ {x: 50, y: 50}, {x: 200, y: 30}, {x: 350, y: 60} ].forEach(c => {
         ctx.beginPath();
@@ -291,7 +286,6 @@ function App() {
         ctx.fill();
       });
 
-      // Background - Hills
       ctx.fillStyle = '#228B22';
       ctx.beginPath();
       ctx.moveTo(0, GROUND_Y);
@@ -299,11 +293,9 @@ function App() {
       ctx.quadraticCurveTo(CANVAS_WIDTH * 0.75, GROUND_Y - 60, CANVAS_WIDTH, GROUND_Y);
       ctx.fill();
 
-      // Ground
       ctx.fillStyle = '#F4A460';
       ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
 
-      // Net
       ctx.fillStyle = '#FFB6C1';
       ctx.fillRect(NET_X - NET_WIDTH / 2, NET_Y, NET_WIDTH, NET_HEIGHT);
       ctx.fillStyle = '#FFF';
@@ -382,6 +374,53 @@ function App() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [gameState, gameMode]);
 
+  // Handle Spike FX timer outside of the main loop to avoid state update issues in raf
+  useEffect(() => {
+    if (!spikeFX) return;
+    const interval = setInterval(() => {
+      setSpikeFX(prev => {
+        if (!prev || prev.timer <= 0) {
+          clearInterval(interval);
+          return null;
+        }
+        return { ...prev, timer: prev.timer - 1 };
+      });
+    }, 30);
+    return () => clearInterval(interval);
+  }, [spikeFX]);
+
+  // Separate Effect for drawing to include Spike FX
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !spikeFX || spikeFX.timer <= 0) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const drawFX = () => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${spikeFX.timer / 10})`;
+      ctx.lineWidth = 3;
+      ctx.arc(spikeFX.x, spikeFX.y, (10 - spikeFX.timer) * 5, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      for(let i=0; i<8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const r1 = (10 - spikeFX.timer) * 3;
+        const r2 = (10 - spikeFX.timer) * 10;
+        ctx.beginPath();
+        ctx.moveTo(spikeFX.x + Math.cos(angle) * r1, spikeFX.y + Math.sin(angle) * r1);
+        ctx.lineTo(spikeFX.x + Math.cos(angle) * r2, spikeFX.y + Math.sin(angle) * r2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+    
+    // We need to redraw everything or just overlay? 
+    // For simplicity, this will just overlay on the current frame.
+    drawFX();
+  }, [spikeFX]);
+
   const startGame = (mode: 'pva' | 'pvp') => {
     setScore({ p1: 0, p2: 0 });
     setGameMode(mode);
@@ -409,8 +448,8 @@ function App() {
             <button onClick={() => startGame('pvp')}>Player vs Player</button>
           </div>
           <div className="controls-hint">
-            <p>P1: W(Jump), A,D(Move), Space(Smash)</p>
-            <p>P2: ArrowKeys(Move), Enter(Smash)</p>
+            <p>P1: W(Jump), A,D(Move), Space(Spike)</p>
+            <p>P2: ArrowKeys(Move), / (Spike)</p>
           </div>
         </div>
       )}
