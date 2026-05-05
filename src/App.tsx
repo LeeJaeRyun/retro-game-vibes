@@ -442,10 +442,11 @@ function App() {
       />
       {gameState === 'start' && (
         <div className="overlay">
-          <h1>Pikachu Volleyball</h1>
+          <h1>&lt;에코노배 배구 대회&gt;</h1>
+          <p className="subtitle">피카추가 되어 배구를 즐기자 🏐💦!</p>
           <div className="menu">
-            <button onClick={() => startGame('pva')}>Player vs AI</button>
-            <button onClick={() => startGame('pvp')}>Player vs Player</button>
+            <button onClick={() => startGame('pva')}>싱글 모드</button>
+            <button onClick={() => startGame('pvp')}>멀티 모드</button>
           </div>
           <div className="controls-hint">
             <p>P1: W(Jump), A,D(Move), Space(Spike)</p>
@@ -455,11 +456,11 @@ function App() {
       )}
       {gameState === 'gameOver' && (
         <div className="overlay">
-          <h1>Game Over</h1>
-          <h2>Player {winner} Wins!</h2>
+          <h1>대회 종료</h1>
+          <h2>Player {winner === 1 ? '의찬' : '준서'} 우승!</h2>
           <div className="menu">
-            <button onClick={() => startGame('pva')}>Retry (AI)</button>
-            <button onClick={() => startGame('pvp')}>Retry (PVP)</button>
+            <button onClick={() => startGame('pva')}>싱글 모드 재도전</button>
+            <button onClick={() => startGame('pvp')}>멀티 모드 재도전</button>
           </div>
         </div>
       )}
