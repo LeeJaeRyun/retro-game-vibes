@@ -59,6 +59,9 @@ function App() {
   const ballImg = useRef<HTMLImageElement | null>(null);
   const victoryP1Img = useRef<HTMLImageElement | null>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const sadBgmRef = useRef<HTMLAudioElement | null>(null);
+
+  const prevSadPlayerRef = useRef<number>(0); // 0: None, 1: P1, 2: P2
 
   const p1Ref = useRef<Player>({
     x: 50,
@@ -120,6 +123,10 @@ function App() {
     bgmRef.current.loop = true;
     bgmRef.current.volume = 0.4;
 
+    // Setup Sad BGM
+    sadBgmRef.current = new Audio('/sad_bgm.mp3');
+    sadBgmRef.current.volume = 0.8;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyK'].includes(e.code)) {
         e.preventDefault();
@@ -138,8 +145,35 @@ function App() {
         bgmRef.current.pause();
         bgmRef.current = null;
       }
+      if (sadBgmRef.current) {
+        sadBgmRef.current.pause();
+        sadBgmRef.current = null;
+      }
     };
   }, []);
+
+  // Monitor score to trigger sad BGM when crying state changes
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+
+    let currentSadPlayer = 0;
+    if (score.p1 < score.p2) currentSadPlayer = 1;
+    else if (score.p2 < score.p1) currentSadPlayer = 2;
+
+    // Trigger only if someone NEW starts crying (excluding draw)
+    if (currentSadPlayer !== 0 && currentSadPlayer !== prevSadPlayerRef.current) {
+      if (sadBgmRef.current && bgmRef.current) {
+        bgmRef.current.volume = 0; // Mute main BGM
+        sadBgmRef.current.currentTime = 0;
+        sadBgmRef.current.play().catch(e => console.log("Sad BGM play failed:", e));
+        
+        setTimeout(() => {
+          if (bgmRef.current) bgmRef.current.volume = 0.4; // Restore main BGM
+        }, 4000);
+      }
+    }
+    prevSadPlayerRef.current = currentSadPlayer;
+  }, [score, gameState]);
 
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -149,7 +183,6 @@ function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Enable high-quality smoothing for photos
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
@@ -186,7 +219,6 @@ function App() {
       const ball = ballRef.current;
       const gameMode = gameModeRef.current;
 
-      // P1 Controls
       if (keys.current['KeyA']) p1.vx = -MOVE_SPEED;
       else if (keys.current['KeyD']) p1.vx = MOVE_SPEED;
       else p1.vx = 0;
@@ -198,7 +230,6 @@ function App() {
 
       const isP1Spiking = keys.current['Space'];
 
-      // P2 Controls or AI
       if (gameMode === 'pvp') {
         if (keys.current['ArrowLeft']) p2.vx = -MOVE_SPEED;
         else if (keys.current['ArrowRight']) p2.vx = MOVE_SPEED;
@@ -228,7 +259,6 @@ function App() {
 
       const isP2Spiking = (gameMode === 'pvp' ? keys.current['KeyK'] : (Math.abs(ball.x - (p2.x + PIKACHU_WIDTH/2)) < 25 && p2.isJumping));
 
-      // Physics
       [p1, p2].forEach((p, index) => {
         p.vy += GRAVITY;
         p.x += p.vx;
@@ -247,7 +277,6 @@ function App() {
         if (p.x > maxX) p.x = maxX;
       });
 
-      // Ball Physics
       ball.vy += GRAVITY * 0.5;
       ball.x += ball.vx;
       ball.y += ball.vy;
@@ -267,7 +296,6 @@ function App() {
 
       if (ball.y > GROUND_Y - BALL_RADIUS) {
         if (ball.x < NET_X) {
-          // P2 Scores
           setScore(s => {
             const next = { ...s, p2: s.p2 + 1 };
             if (next.p2 >= 10) {
@@ -278,7 +306,6 @@ function App() {
           });
           resetBall(true);
         } else {
-          // P1 Scores
           setScore(s => {
             const next = { ...s, p1: s.p1 + 1 };
             if (next.p1 >= 10) {
@@ -345,12 +372,8 @@ function App() {
 
     const draw = () => {
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      
-      // Sky
       ctx.fillStyle = '#87CEEB';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      
-      // Clouds
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       [ {x: 80, y: 50}, {x: 300, y: 30}, {x: 520, y: 60} ].forEach(c => {
         ctx.beginPath();
@@ -359,20 +382,14 @@ function App() {
         ctx.arc(c.x + 30, c.y, 20, 0, Math.PI * 2);
         ctx.fill();
       });
-      
-      // Hills
       ctx.fillStyle = '#228B22';
       ctx.beginPath();
       ctx.moveTo(0, GROUND_Y);
       ctx.quadraticCurveTo(CANVAS_WIDTH / 4, GROUND_Y - 40, CANVAS_WIDTH / 2, GROUND_Y - 20);
       ctx.quadraticCurveTo(CANVAS_WIDTH * 0.75, GROUND_Y - 60, CANVAS_WIDTH, GROUND_Y);
       ctx.fill();
-      
-      // Ground
       ctx.fillStyle = '#F4A460';
       ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
-
-      // Net
       ctx.fillStyle = '#FFB6C1';
       ctx.fillRect(NET_X - NET_WIDTH / 2, NET_Y, NET_WIDTH, NET_HEIGHT);
       ctx.fillStyle = '#FFF';
@@ -408,7 +425,6 @@ function App() {
         ctx.fillRect(p2Ref.current.x, p2Ref.current.y, PIKACHU_WIDTH, PIKACHU_HEIGHT);
       }
 
-      // Ball Render
       if (ballImg.current) {
         ctx.drawImage(ballImg.current, ballRef.current.x - BALL_RADIUS, ballRef.current.y - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2);
       } else {
@@ -435,6 +451,7 @@ function App() {
   const startGame = (mode: 'pva' | 'pvp') => {
     setScore({ p1: 0, p2: 0 });
     gameModeRef.current = mode;
+    prevSadPlayerRef.current = 0;
     setGameState('playing');
     setWinner(null);
     particlesRef.current = [];
